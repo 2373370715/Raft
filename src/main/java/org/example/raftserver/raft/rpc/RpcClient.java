@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.example.raftserver.raft.conf.RaftConfig;
 import org.example.raftserver.raft.enums.RequestType;
-import org.example.raftserver.raft.util.JacksonSerializer;
 import org.springframework.stereotype.Component;
 
 

@@ -118,7 +118,9 @@ public class FollowerState implements NodeState {
         int term = request.term();
         if(term < metaData.getCurrentTerm()) {
             log.info("拒绝 AppendEntries：leader 任期 {} 小于当前节点任期 {}", term, metaData.getCurrentTerm());
-            return new AppendEntriesResponse(metaData.getCurrentTerm(), AppendEntriesResponseType.TERM_TOO_SMALL);
+            return new AppendEntriesResponse(metaData.getCurrentTerm(),
+                                             AppendEntriesResponseType.TERM_TOO_SMALL,
+                                             metaData.getLogs().getLastLogIndex());
         }else if(term > metaData.getCurrentTerm()) {
             log.info("更新当前节点任期：{} -> {}", metaData.getCurrentTerm(), term);
             metaData.setCurrentTerm(term);
@@ -130,14 +132,16 @@ public class FollowerState implements NodeState {
 
         // 特殊处理：prevLogIndex == 0 表示没有前一条日志（初始情况），直接通过
         if(prevLogIndex > 0) {
-            LogEntity localLog = metaData.getLogs().getLog(prevLogIndex);
+            LogEntity localLog = metaData.getLog(prevLogIndex);
             if(localLog == null || localLog.getTerm() != prevLogTerm) {
                 log.warn("日志不匹配：期望 term={}, index={}，本地 term={}, index={}",
                          prevLogTerm,
                          prevLogIndex,
                          localLog != null ? localLog.getTerm() : -1,
                          prevLogIndex);
-                return new AppendEntriesResponse(metaData.getCurrentTerm(), AppendEntriesResponseType.LOG_MISMATCH);
+                return new AppendEntriesResponse(metaData.getCurrentTerm(),
+                                                 AppendEntriesResponseType.LOG_MISMATCH,
+                                                 metaData.getLogs().getLastLogIndex());
             }
         }
 
@@ -151,13 +155,13 @@ public class FollowerState implements NodeState {
 
             // 追加新日志
             for(LogEntity entry : entries) {
-                metaData.getLogs().add(entry);
+                metaData.getLogs().append(entry);
             }
         }
 
         // 4. 更新 commitIndex（关键：只能提交到本地最后一条日志）
         int leaderCommit = request.leaderCommit();
-        int lastLogIndex = metaData.getLogs().getLast().getIndex();
+        int lastLogIndex = metaData.getLogs().getLastLogIndex();
 
         if(leaderCommit > metaData.getLogs().getCommitIndex()) {
             int newCommitIndex = Math.min(leaderCommit, lastLogIndex);
@@ -168,7 +172,7 @@ public class FollowerState implements NodeState {
         }
 
         // 5. 返回成功响应
-        int currentLastLogIndex = metaData.getLogs().getLast().getIndex();
+        int currentLastLogIndex = metaData.getLogs().getLastLogIndex();
         return new AppendEntriesResponse(metaData.getCurrentTerm(), AppendEntriesResponseType.SUCCESS, currentLastLogIndex);
     }
 
@@ -187,9 +191,8 @@ public class FollowerState implements NodeState {
 
         int lastLogIndex = request.lastLogIndex();
         int lastLogTerm = request.lastLogTerm();
-        LogEntity last = metaData.getLogs().getLast();
         // 如果candidate的日志更少，或者term更小，则拒绝投票
-        if(last.getIndex() > lastLogIndex || last.getTerm() > lastLogTerm) {
+        if(metaData.getLogs().getLastLogIndex() > lastLogIndex || metaData.getLogs().getLastLogTerm() > lastLogTerm) {
             return new RequestVoteResponse(false);
         }
 

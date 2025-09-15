@@ -35,7 +35,7 @@ public class CandidateState implements NodeState {
     public AppendEntriesResponse handleAppendEntries(AppendEntriesRequest request) {
         eventManager.publish(new StateTransitionEvent(NodeType.FOLLOWER));
         // 回退一个，此条重发
-        return new AppendEntriesResponse(metaData.getCurrentTerm(), AppendEntriesResponseType.APPEND_FAIL);
+        return new AppendEntriesResponse(metaData.getCurrentTerm(), AppendEntriesResponseType.LOG_MISMATCH, metaData.getLogs().getLastLogIndex());
     }
 
     /**

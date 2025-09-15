@@ -1,25 +1,19 @@
 package org.example.raftserver.raft.rpc;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
 import lombok.extern.log4j.Log4j2;
 import org.example.raftserver.raft.Exception.ServiceStartFail;
 import org.example.raftserver.raft.MetaData;
 import org.example.raftserver.raft.RaftNode;
 import org.example.raftserver.raft.conf.RaftConfig;
 import org.example.raftserver.raft.enums.RequestType;
-import org.example.raftserver.raft.log.LogEntity;
-import org.example.raftserver.raft.log.MyLogList;
 import org.example.raftserver.raft.util.JacksonSerializer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.List;
 
 /**
  * RPC服务端

@@ -1,5 +1,6 @@
 package org.example.raftserver.raft.conf;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
@@ -11,6 +12,7 @@ import java.util.concurrent.*;
 
 @Configuration
 @EnableScheduling
+@Slf4j
 public class SchedulerConfig {
 
     /**
@@ -37,12 +39,19 @@ public class SchedulerConfig {
     @Bean("raftRpcExecutor")
     public ExecutorService raftRpcExecutor() {
         int cpus = Runtime.getRuntime().availableProcessors();
-        return Executors.newFixedThreadPool(cpus, r -> {
-            Thread thread = new Thread(r, "raft-rpc-" + System.currentTimeMillis() % 10000);
-            thread.setUncaughtExceptionHandler((t, e) -> System.err.println("Uncaught exception in " + t.getName() + ": " + e));
-            return thread;
-        });
+        return new ThreadPoolExecutor(cpus,                           // 核心线程数
+                                      cpus * 2,                       // 最大线程数
+                                      0L,                            // 空闲线程存活时间
+                                      TimeUnit.SECONDS,               // 时间单位
+                                      new LinkedBlockingQueue<>(1000), // 任务队列
+                                      r -> {
+                                          Thread thread = new Thread(r, "raft-rpc-thread-" + System.currentTimeMillis() % 10000);
+                                          thread.setUncaughtExceptionHandler((t, e) -> log.error("Uncaught exception in {}", t.getName(), e));
+                                          return thread;
+                                      }, new ThreadPoolExecutor.CallerRunsPolicy() // 拒绝策略
+        );
     }
+
 
     /**
      * 用于处理选举超时（最多执行一次的延迟任务）
@@ -51,7 +60,15 @@ public class SchedulerConfig {
      */
     @Bean("raftElectionScheduler")
     public ScheduledExecutorService raftElectionScheduler() {
-        return Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "raft-election-timer"));
+        ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1, r -> {
+            Thread thread = new Thread(r, "raft-election-timer");
+            thread.setUncaughtExceptionHandler((t, e) -> log.error("Uncaught exception in {}", t.getName(), e));
+            return thread;
+        });
+        executor.setRemoveOnCancelPolicy(true);
+        // 设置核心线程不会超时销毁
+        executor.setKeepAliveTime(0L, TimeUnit.SECONDS);
+        executor.allowCoreThreadTimeOut(false);
+        return executor;
     }
-
 }

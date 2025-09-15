@@ -45,7 +45,7 @@ public class LeaderState implements NodeState {
         String peer = request.candidateId();
         int preLogIndex = metaData.getNextSend(peer);
         System.out.println("leader收到 " + peer + " 投票请求 " + preLogIndex);
-        int prevLogTerm = metaData.getLogs().getLog(preLogIndex).getTerm();
+        int prevLogTerm = metaData.getLogs().getLastLogTerm();
         AppendEntriesRequest heartBeatRequest = new AppendEntriesRequest(metaData.getCurrentTerm(),
                                                                          raftConfig.getNodeId(),
                                                                          preLogIndex,
@@ -60,8 +60,8 @@ public class LeaderState implements NodeState {
     public ClientResponse handleCommand(String command) {
         log.info("Leader处理客户端请求");
         // 添加日志
-        int index = metaData.getLogs().getIndex() + 1;
-        metaData.getLogs().add(new LogEntity(metaData.getCurrentTerm(), index, command));
+        int index = metaData.getLogs().getLastLogIndex() + 1;
+        metaData.getLogs().append(new LogEntity(metaData.getCurrentTerm(), index, command));
         // TODO 日志的广播在心跳中，客户端需等待运行结果
         return ClientResponse.success("成功");
     }

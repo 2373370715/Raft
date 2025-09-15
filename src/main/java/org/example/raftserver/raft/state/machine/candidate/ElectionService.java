@@ -60,9 +60,8 @@ public class ElectionService {
         addVote();
 
         // 3. 获取最后一条日志信息
-        LogEntity lastLog = metaData.getLogs().getLast();
-        int lastLogIndex = lastLog != null ? lastLog.getIndex() : 0;
-        int lastLogTerm = lastLog != null ? lastLog.getTerm() : 0;
+        int lastLogIndex = metaData.getLogs().getLastLogIndex();
+        int lastLogTerm = metaData.getLogs().getLastLogTerm();
 
         // 4. 随机化选举超时时间（避免脑裂）
         long timeoutMs =
@@ -97,8 +96,7 @@ public class ElectionService {
 
             rpcExecutor.submit(() -> {
                 try {
-                    RequestVoteRequest request =
-                            new RequestVoteRequest(metaData.getCurrentTerm(), raftConfig.getNodeId(), lastLogIndex, lastLogTerm);
+                    RequestVoteRequest request = new RequestVoteRequest(metaData.getCurrentTerm(), raftConfig.getNodeId(), lastLogIndex, lastLogTerm);
 
                     log.debug("📤 向节点 {} 发送投票请求: {}", peerId, request);
 

@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.util.Tuple;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -72,22 +71,6 @@ public class MetaData {
     }
 
     /**
-     * 获取当前日志有多少个节点复制了
-     *
-     * @param index 日志的索引
-     */
-    public int getLogCopyCount(int index) {
-        // 自己已经复制了，初始化为1
-        AtomicInteger count = new AtomicInteger(1);
-        alreadyCopy.forEach((nodeId, alreadyCopyIndex) -> {
-            if(alreadyCopyIndex >= index) {
-                count.getAndIncrement();
-            }
-        });
-        return count.get();
-    }
-
-    /**
      * 获取日志
      * @param index 日志索引
      */
@@ -123,18 +106,5 @@ public class MetaData {
 
     public void updateCurrentLeader(String nodeId, int port) {
         currentLeader = new Tuple<>(currentTerm, new Address(nodeId, nodeId, port));
-    }
-
-    public void debug() {
-        List<String> peers = raftConfig.getPeers();
-        for(String peer : peers) {
-            System.out.println("==========" + peer + "的信息==========");
-            System.out.println(this.getAlreadyCopy(peer) + "\t" + this.getNextSend(peer));
-        }
-        System.out.println("==========leader中log的信息==========");
-        LogEntity[] list = this.getLogs().getList();
-        for(int i = 0; i < logs.getIndex(); i++) {
-            System.out.println(list[i]);
-        }
     }
 }
