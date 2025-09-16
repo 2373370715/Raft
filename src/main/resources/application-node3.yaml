@@ -1,21 +1,23 @@
 spring.application.name: RaftServer
 raft:
-    node-id: node3
-    port: 8183
-    client-port: 18083
-    data-path: /tmp/raft/node1
+    node-id:              node3
+    port:                 8183
+    client-port:          18083
+    persistence:
+        base-path:            tmp/raft/node3
+        log-flush-batch-size: 100
+        segmented-logs:       true
     election-timeout-min: 1500
     election-timeout-max: 3000
-    heartbeat-timeout: 1000
-    heartbeat-interval: 100
-
+    heartbeat-timeout:    1000
+    heartbeat-interval:   100
     peers:
-        - node-id: node1
-          ip: 127.0.0.1
-          port: 8181
-        - node-id: node2
-          ip: 127.0.0.1
-          port: 8182
-        - node-id: node3
-          ip: 127.0.0.1
-          port: 8183
+        -   node-id: node1
+            host:    127.0.0.1
+            port:    8181
+        -   node-id: node2
+            host:    127.0.0.1
+            port:    8182
+        -   node-id: node3
+            host:    127.0.0.1
+            port:    8183
